@@ -1,0 +1,9 @@
+node_modules/
+.env
+
+# Perfis de navegador com as SESSOES LOGADAS do usuario (WhatsApp Web, Instagram,
+# Google). Nunca versionar: equivale a versionar as credenciais dele.
+data/
+
+# Relatorios gerados por `scout report`
+tests/reports/
