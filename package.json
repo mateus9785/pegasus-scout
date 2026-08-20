@@ -2,6 +2,7 @@
   "name": "pegasus-scout",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Etapa 1 do Projeto Pegasus: mapeia empresas, enriquece dados publicos e pontua a chance de o atendimento ainda ser manual.",
   "engines": {
