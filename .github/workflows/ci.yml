@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # loadEnv() (src/config/env.ts) fail-fasts if DB_* is missing, and it's
+    # pulled in transitively at import time via the shared logger — even the
+    # unit tests trip it, despite touching no real database. These are dummy
+    # values only; nothing in the unit suite connects to MySQL with them.
+    env:
+      DB_HOST: localhost
+      DB_USER: ci
+      DB_PASSWORD: ci
+      DB_NAME: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+
+      # tests/integration is intentionally NOT run here: it needs a live MySQL
+      # instance plus ../artificialstudio/backend/src/db/schema.sql checked out
+      # as a sibling directory (see tests/helpers/globalSetup.ts and CLAUDE.md).
+      # That cross-repo coupling is deliberate (single source of truth for the
+      # scout_* DDL) but doesn't fit a single-repo CI runner. Integration tests
+      # stay a local-only step via `npm run test:int` / `npm run verify`.
