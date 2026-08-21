@@ -1,35 +1,35 @@
-# pegasus-scout — Etapa 1 do Projeto Pegasus
+# pegasus-scout
 
 Robô de prospecção. Mapeia empresas de um nicho numa cidade, lê o site de cada uma,
 descobre **como o atendimento delas funciona hoje** e devolve um ranking com o que
 vender para cada uma.
 
 Custo: **zero**. Sem API paga. O Google Maps é lido com Playwright, o geocoding usa
-o OpenStreetMap, e a análise das páginas roda no CLI `claude` como subprocesso — na
+o OpenStreetMap, e a análise das páginas roda no CLI `claude` como subprocesso, na
 sua assinatura, do mesmo jeito que o `chatbot_7m` faz.
 
-## O que esta etapa entrega — e o que ela não entrega
+## O que o projeto entrega e o que não entrega
 
 **Entrega:** a lista de empresas que provavelmente atendem à mão, ordenada, com o
 telefone de WhatsApp de cada uma, o que ela vende, o porte, e um gancho de abordagem
 específico.
 
 **Não entrega:** a confirmação de que o atendimento é humano e lento. Medir tempo de
-resposta exige mandar mensagem, e **nada nesta etapa envia mensagem para ninguém**.
-Por isso o veredito é `provavelmente_manual`, nunca `manual`. Confirmar é trabalho da
-Etapa 2.
+resposta exige mandar mensagem, e **nada aqui envia mensagem para ninguém**.
+Por isso o veredito é `provavelmente_manual`, nunca `manual`: confirmar isso exigiria
+contato ativo, que está fora do escopo deste projeto.
 
 O que substitui a medição é um conjunto de sinais públicos:
 
 | Sinal | Lê como |
 |---|---|
-| Widget de chat no site (Tawk, JivoChat, Crisp, Blip, Zenvia, Intercom…) | **já automatizada → descartar** |
-| `wa.me` ou botão flutuante de WhatsApp, sem widget | atendimento manual — **alvo bom** |
-| Plataforma de e-commerce (NuvemShop, Shopify, VTEX, Tray, Woo…) | tem ERP, estoque e frete para integrar — **alvo ótimo** |
-| Site anunciado no Maps mas fora do ar | maturidade digital baixa — **vende site novo junto** |
+| Widget de chat no site (Tawk, JivoChat, Crisp, Blip, Zenvia, Intercom…) | **já automatizada, descartar** |
+| `wa.me` ou botão flutuante de WhatsApp, sem widget | atendimento manual, **alvo bom** |
+| Plataforma de e-commerce (NuvemShop, Shopify, VTEX, Tray, Woo…) | tem ERP, estoque e frete para integrar, **alvo ótimo** |
+| Site anunciado no Maps mas fora do ar | maturidade digital baixa, **vende site novo junto** |
 | Sem site nenhum, só Maps | presença digital do zero |
 | Muitas avaliações no Maps | volume de clientes → dor de atendimento real |
-| DDD do contato de outro estado | é a central da rede, não a loja — **descartar** |
+| DDD do contato de outro estado | é a central da rede, não a loja, **descartar** |
 
 ## Instalação
 
@@ -57,7 +57,7 @@ npm run scout -- doctor
 # Login uma única vez (abre o navegador visível; só guarda o consentimento de cookies)
 npm run scout -- login maps
 
-# A Etapa 1 inteira
+# O fluxo completo
 npm run scout -- run --niche "pet shop" --city "Brasilia" --state DF \
                      --radius-km 5 --max 60 --with-llm
 
@@ -68,7 +68,7 @@ npm run scout -- score
 npm run scout -- report --top 20        # → tests/reports/prospeccao-<data>.md
 ```
 
-Nada de nicho, cidade ou raio está fixo no código — tudo entra por parâmetro.
+Nada de nicho, cidade ou raio está fixo no código: tudo entra por parâmetro.
 
 ### Comandos
 
@@ -92,26 +92,26 @@ natural (`ftid` do Google, ou nome + coordenada arredondada). O segundo run atua
 que mudou e marca `last_seen_at`. Verificado: 12 empresas, 2 buscas, 24 ligações N:M,
 12 chaves únicas.
 
-Campo que já tem valor bom nunca é sobrescrito por `NULL` — se o painel do Maps não
+Campo que já tem valor bom nunca é sobrescrito por `NULL`: se o painel do Maps não
 mostrou o telefone nesta passada, o telefone da passada anterior permanece.
 
 ## Arquitetura em uma frase por decisão
 
 **O Playwright navega, funções puras parseiam.** O driver devolve `innerHTML` como
 string e todo parsing é função pura com `cheerio`. É isso que permite os parsers terem
-teste de verdade contra HTML real salvo em `tests/fixtures/maps/`, sem rede — e permite
+teste de verdade contra HTML real salvo em `tests/fixtures/maps/`, sem rede, e permite
 trocar o Maps pela Places API depois implementando a mesma interface (`MapsPage`).
 
 **Determinístico onde é fato, LLM onde é juízo.** "O site carrega `embed.tawk.to`" é
-binário, grátis e testável — fica em tabela de assinatura. "O que essa empresa vende,
-qual a dor dela, qual o gancho" é interpretação — vai para o CLI `claude`. Pedir o
+binário, grátis e testável, fica em tabela de assinatura. "O que essa empresa vende,
+qual a dor dela, qual o gancho" é interpretação, vai para o CLI `claude`. Pedir o
 primeiro ao modelo seria pior; tentar o segundo com regex seria impossível.
 
 **O banco é o estado.** Cada estágio grava assim que lê. Um Ctrl+C no meio de uma
 varredura de 40 minutos preserva tudo que já foi feito, e rodar de novo continua.
 
 **O score é determinístico e versionado.** Ele decide a ordem de abordagem, e essa
-decisão precisa ser auditável — cada nota vem com a lista de motivos e pesos. Um modelo
+decisão precisa ser auditável: cada nota vem com a lista de motivos e pesos. Um modelo
 daria uma opinião que muda entre chamadas.
 
 ## O sinal que não pode errar
@@ -131,13 +131,13 @@ script em runtime, e nesse caso a URL do CDN não aparece no HTML servido.
 npm run verify     # typecheck + lint + unit + integração
 ```
 
-- **`tests/unit/`** — 131 testes, sem rede e sem banco, rodam em ~1s. Cobrem os
+- **`tests/unit/`**: 131 testes, sem rede e sem banco, rodam em ~1s. Cobrem os
   parsers do Maps **contra HTML real capturado**, os detectores, normalização de
   telefone E.164 (nono dígito, DDD por UF, 0800), tiling geográfico e o scoring.
-- **`tests/integration/`** — 21 testes contra o MySQL do docker, num banco separado
+- **`tests/integration/`**: 21 testes contra o MySQL do docker, num banco separado
   (`artificialcode_test`) criado a partir do **mesmo `schema.sql`** do
   artificialstudio. O banco de trabalho nunca é tocado.
-- **`check:selectors`** — o driver do Playwright é a única parte sem teste
+- **`check:selectors`**: o driver do Playwright é a única parte sem teste
   automatizado, porque depende do DOM do Google. Este comando é o substituto: falha
   cedo e com mensagem clara quando o layout mudar, em vez de gravar 40 registros
   vazios.
@@ -159,7 +159,8 @@ npx tsx scripts/capture-fixtures.ts "pet shop" "Brasilia" DF
 2. **LGPD.** A coleta é de dado comercial publicado pela própria empresa, o que tem
    base legal razoável em prospecção B2B, mas exige registrar a origem de cada dado
    (é o que `scout_prospect_signals.evidence` faz) e honrar opt-out (é o que
-   `scout_blocklist` faz). O ponto sensível de verdade é o **envio**, que é Etapa 2.
+   `scout_blocklist` faz). O ponto sensível de verdade é o envio de mensagens, que
+   este projeto não faz.
 
 3. **Os seletores do Maps quebram sem aviso.** Concentrados em
    `src/discovery/selectors.ts`, com cascata de fallback e `check:selectors` como
@@ -168,14 +169,6 @@ npx tsx scripts/capture-fixtures.ts "pet shop" "Brasilia" DF
 4. **O veredito é probabilístico.** Não mede tempo de resposta. `score_version` está
    gravado em cada empresa para você recalibrar os pesos e reprocessar o histórico.
 
-## Ganchos para as próximas etapas
-
-Já previstos no schema, sem tabela nova:
-
-- **Etapa 2** — `scout_prospects.pipeline_status = 'em_atendimento'`, e
-  `scout_prospect_briefs.gancho_abordagem` é a personalização da mensagem. A
-  `scout_blocklist` já existe para ser consultada antes de qualquer envio, e as
-  tabelas `scout_whatsapp_checks` / colunas `social_*` estão criadas mas ainda não
-  usadas.
-- **Etapa 3** — `ALTER TABLE scout_prospects ADD COLUMN kanban_card_id INT NULL` no
-  fim do `schema.sql`, seguindo o padrão idempotente do arquivo.
+Algumas colunas do schema (`pipeline_status`, `scout_whatsapp_checks`, colunas
+`social_*`) já preveem extensões futuras, como acompanhamento em kanban ou checagem de
+WhatsApp, mas não são usadas por este projeto hoje.
